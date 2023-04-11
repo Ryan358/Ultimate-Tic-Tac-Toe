@@ -19,9 +19,8 @@ board = np.zeros(BOARD_SIZE)
 
 GAME_OVER = False
 player = 1
-# sysfont = pygame.font.get_default_font()
-# print('system font :', sysfont)
-font = pygame.font.SysFont(None, OFFSET)
+sysfont = pygame.font.get_default_font()
+font = pygame.font.SysFont(sysfont, OFFSET)
 
 
 def draw_lines():
@@ -48,26 +47,26 @@ def check_win():
     for column in range(BOARD_SIZE[1]):
         if board[0][column] == board[1][column] == board[2][column] and board[0][column] != 0:
             # draw win line
-            pygame.draw.line(screen, LINE_COLOR, (column * WIDTH / 3 + WIDTH / 6, 10),
-                             (column * WIDTH / 3 + WIDTH / 6, HEIGHT - 10), 5)
+            pygame.draw.line(screen, LINE_COLOR, (column * WIDTH / 3 + WIDTH / 6, OFFSET),
+                             (column * WIDTH / 3 + WIDTH / 6, HEIGHT - OFFSET), 5)
             return board[0][column]
 
     # Check vertical locations for win
     for row_num in range(BOARD_SIZE[0]):
         if board[row_num][0] == board[row_num][1] == board[row_num][2] and board[row_num][0] != 0:
             # draw win line
-            pygame.draw.line(screen, LINE_COLOR, (10, row_num * HEIGHT / 3 + HEIGHT / 6),
-                             (WIDTH - 10, row_num * HEIGHT / 3 + HEIGHT / 6), 5)
+            pygame.draw.line(screen, LINE_COLOR, (OFFSET, row_num * HEIGHT / 3 + HEIGHT / 6),
+                             (WIDTH - OFFSET, row_num * HEIGHT / 3 + HEIGHT / 6), 5)
             return board[row_num][0]
 
     # Check diagonal locations for win
     if board[2][0] == board[1][1] == board[0][2] and board[2][0] != 0:
         # draw win line
-        pygame.draw.line(screen, LINE_COLOR, (10, HEIGHT - 10), (WIDTH - 10, 10), 5)
+        pygame.draw.line(screen, LINE_COLOR, (OFFSET, HEIGHT - OFFSET), (WIDTH - OFFSET, OFFSET), 5)
         return board[1][1]
     if board[0][0] == board[1][1] == board[2][2] and board[0][0] != 0:
         # draw win line
-        pygame.draw.line(screen, LINE_COLOR, (10, 10), (WIDTH - 10, HEIGHT - 10), 5)
+        pygame.draw.line(screen, LINE_COLOR, (OFFSET, OFFSET), (WIDTH - OFFSET, HEIGHT - OFFSET), 5)
         return board[1][1]
 
     return False
