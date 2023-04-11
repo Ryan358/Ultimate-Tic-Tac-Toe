@@ -81,9 +81,11 @@ def draw_figures(pos: tuple, player: int):
         pygame.draw.line(screen, LINE_COLOR, (pos[0] + 60, pos[1] - 60), (pos[0] - 60, pos[1] + 60), 15)
 
 
-def reset_game(board_array, over):
-    board_array = np.zeros(BOARD_SIZE)
-    over = False
+def reset_game():
+    global GAME_OVER, board
+    board = np.zeros(BOARD_SIZE)
+    GAME_OVER = False
+
     screen.fill(BG_COLOR)
     draw_lines()
 
@@ -136,7 +138,7 @@ while True:
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
-                reset_game(board, GAME_OVER)
+                reset_game()
 
         if GAME_OVER:
             restart_text = font.render("Press R to restart", True, LINE_COLOR)
