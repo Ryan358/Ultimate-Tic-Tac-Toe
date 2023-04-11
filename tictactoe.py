@@ -8,7 +8,7 @@ WIDTH, HEIGHT = 800, 800
 BG_COLOR = (255, 255, 255)
 LINE_COLOR = (0, 0, 0)
 BOARD_SIZE = (3, 3)
-
+OFFSET = 40
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
@@ -21,22 +21,22 @@ GAME_OVER = False
 player = 1
 # sysfont = pygame.font.get_default_font()
 # print('system font :', sysfont)
-font = pygame.font.SysFont(None, 40)
+font = pygame.font.SysFont(None, OFFSET)
 
 
 def draw_lines():
-    pygame.draw.line(screen, LINE_COLOR, (WIDTH / 3, 10), (WIDTH / 3, HEIGHT - 10), 5)
-    pygame.draw.line(screen, LINE_COLOR, (WIDTH / 3 * 2, 10), (WIDTH / 3 * 2, HEIGHT - 10), 5)
-    pygame.draw.line(screen, LINE_COLOR, (10, HEIGHT / 3), (WIDTH - 10, HEIGHT / 3), 5)
-    pygame.draw.line(screen, LINE_COLOR, (10, HEIGHT / 3 * 2), (WIDTH - 10, HEIGHT / 3 * 2), 5)
+    pygame.draw.line(screen, LINE_COLOR, (WIDTH / 3, OFFSET), (WIDTH / 3, HEIGHT - OFFSET), 5)
+    pygame.draw.line(screen, LINE_COLOR, (WIDTH / 3 * 2, OFFSET), (WIDTH / 3 * 2, HEIGHT - OFFSET), 5)
+    pygame.draw.line(screen, LINE_COLOR, (OFFSET, HEIGHT / 3), (WIDTH - OFFSET, HEIGHT / 3), 5)
+    pygame.draw.line(screen, LINE_COLOR, (OFFSET, HEIGHT / 3 * 2), (WIDTH - OFFSET, HEIGHT / 3 * 2), 5)
 
 
-def mark_square(row, col, player):
-    board[row][col] = player
+def mark_square(row_num, column, player_num):
+    board[row_num][column] = player_num
 
 
-def available_square(row, col):
-    return board[row][col] == 0
+def available_square(row_num, column):
+    return board[row_num][column] == 0
 
 
 def is_board_full():
@@ -45,20 +45,20 @@ def is_board_full():
 
 def check_win():
     # Check horizontal locations for win
-    for col in range(BOARD_SIZE[1]):
-        if board[0][col] == board[1][col] == board[2][col] and board[0][col] != 0:
+    for column in range(BOARD_SIZE[1]):
+        if board[0][column] == board[1][column] == board[2][column] and board[0][column] != 0:
             # draw win line
-            pygame.draw.line(screen, LINE_COLOR, (col * WIDTH / 3 + WIDTH / 6, 10),
-                             (col * WIDTH / 3 + WIDTH / 6, HEIGHT - 10), 5)
-            return board[0][col]
+            pygame.draw.line(screen, LINE_COLOR, (column * WIDTH / 3 + WIDTH / 6, 10),
+                             (column * WIDTH / 3 + WIDTH / 6, HEIGHT - 10), 5)
+            return board[0][column]
 
     # Check vertical locations for win
-    for row in range(BOARD_SIZE[0]):
-        if board[row][0] == board[row][1] == board[row][2] and board[row][0] != 0:
+    for row_num in range(BOARD_SIZE[0]):
+        if board[row_num][0] == board[row_num][1] == board[row_num][2] and board[row_num][0] != 0:
             # draw win line
-            pygame.draw.line(screen, LINE_COLOR, (10, row * HEIGHT / 3 + HEIGHT / 6),
-                             (WIDTH - 10, row * HEIGHT / 3 + HEIGHT / 6), 5)
-            return board[row][0]
+            pygame.draw.line(screen, LINE_COLOR, (10, row_num * HEIGHT / 3 + HEIGHT / 6),
+                             (WIDTH - 10, row_num * HEIGHT / 3 + HEIGHT / 6), 5)
+            return board[row_num][0]
 
     # Check diagonal locations for win
     if board[2][0] == board[1][1] == board[0][2] and board[2][0] != 0:
@@ -73,8 +73,8 @@ def check_win():
     return False
 
 
-def draw_figures(pos: tuple, player: int):
-    if player == 1:
+def draw_figures(pos: tuple, player_num: int):
+    if player_num == 1:
         pygame.draw.circle(screen, LINE_COLOR, pos, 60, 15)
     else:
         pygame.draw.line(screen, LINE_COLOR, (pos[0] - 60, pos[1] - 60), (pos[0] + 60, pos[1] + 60), 15)
@@ -88,7 +88,6 @@ def reset_game():
 
     screen.fill(BG_COLOR)
     draw_lines()
-
 
 
 draw_lines()
@@ -142,9 +141,9 @@ while True:
 
         if GAME_OVER:
             restart_text = font.render("Press R to restart", True, LINE_COLOR)
-            screen.blit(restart_text, (WIDTH / 3 - restart_text.get_width() , HEIGHT - restart_text.get_height()))
+            screen.blit(restart_text, (WIDTH / 3 - restart_text.get_width(), HEIGHT - restart_text.get_height()))
             quit_text = font.render("Press SPACE to quit", True, LINE_COLOR)
-            screen.blit(quit_text, (WIDTH  - quit_text.get_width(), HEIGHT - quit_text.get_height()))
+            screen.blit(quit_text, (WIDTH - quit_text.get_width(), HEIGHT - quit_text.get_height()))
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     sys.exit("Thanks for playing!")
