@@ -1,12 +1,11 @@
 """A simple tic-tac-toe game in pygame. Contains both single player and multiplayer modes."""
-
 import pygame
-import numpy as np
 import sys
 import game_setup as setup
 
 screen = setup.start_game()
 
+# create game object and potential player objects
 game = setup.Game(screen)
 player1 = setup.Player(1)
 player2 = setup.Player(2)
@@ -17,16 +16,20 @@ font = pygame.font.SysFont(sysfont, setup.OFFSET)
 
 while True:
     for event in pygame.event.get():
+        # check if the game is in new game mode, if so, display the new game menu
         game.new_game_menu(event, font)
         if game.check_win():
+            # if check_win returns true, end the game and print out the winner
             text = font.render(f"Player {game.winner} wins!", True, setup.LINE_COLOR)
             screen.blit(text, (setup.WIDTH / 2 - text.get_width() / 2, text.get_height() / 2))
             game.game_over = True
         if game.is_board_full():
+            # check if the game board is full, i.e. a draw
             game.game_over = True
         if event.type == pygame.QUIT:
             sys.exit()
         if game.single_player:
+            # alternate between player 1 and player 2, since we are in single player mode
             if event.type == pygame.MOUSEBUTTONDOWN and not game.game_over and not game.new_game:
                 if game.player_turn == 1:
                     player1.make_move(game, screen)

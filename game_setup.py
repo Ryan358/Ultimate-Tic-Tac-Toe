@@ -1,4 +1,4 @@
-"""this code creates the player and computer player classes, as well as the game settings and functions.
+"""This code creates the player and computer player classes, as well as the game settings and functions.
 This code is import only. The logic is handled in the main file."""
 
 import numpy as np
