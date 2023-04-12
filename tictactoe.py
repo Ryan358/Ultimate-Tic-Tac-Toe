@@ -20,7 +20,7 @@ while True:
         game.new_game_menu(event, font)
         if game.check_win():
             # if check_win returns true, end the game and print out the winner
-            text = font.render(f"Player {game.winner} wins!", True, setup.LINE_COLOR)
+            text = font.render(f"Player {int(game.winner)} wins!", True, setup.LINE_COLOR)
             screen.blit(text, (setup.WIDTH / 2 - text.get_width() / 2, text.get_height() / 2))
             game.game_over = True
         if game.is_board_full():
@@ -28,7 +28,7 @@ while True:
             game.game_over = True
         if event.type == pygame.QUIT:
             sys.exit()
-        if game.single_player:
+        if game.multi_player:
             # alternate between player 1 and player 2, since we are in single player mode
             if event.type == pygame.MOUSEBUTTONDOWN and not game.game_over and not game.new_game:
                 if game.player_turn == 1:
@@ -38,15 +38,15 @@ while True:
                     player2.make_move(game, screen)
                     game.change_turn()
 
-        if game.multi_player:
+        if game.single_player:
             # use computer player to make move as player 2
             if event.type == pygame.MOUSEBUTTONDOWN and not game.game_over and not game.new_game:
                 if game.player_turn == 1:
                     player1.make_move(game, screen)
                     game.change_turn()
-                else:
-                    com_player.make_move(game, screen)
-                    game.change_turn()
+            if game.player_turn != 1 and not game.game_over and not game.new_game:
+                com_player.make_move(game, screen)
+                game.change_turn()
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:

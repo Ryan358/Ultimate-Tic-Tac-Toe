@@ -5,12 +5,15 @@ import numpy as np
 import pygame
 import random
 from numpy import ndarray
+import math
+import time
 
 WIDTH, HEIGHT = 800, 800
 BG_COLOR = (220, 220, 220)
 LINE_COLOR = (0, 0, 0)
 BOARD_SIZE = (3, 3)
 OFFSET = 40
+delay = 0.5
 
 
 def draw_lines(screen: pygame.Surface):
@@ -42,6 +45,7 @@ class Game:
         self.multi_player = False
         self.screen = screen
         self.player_turn = 1
+        self.simulated_board = False
 
     def mark_square(self, row_num: int, column: int, player_num: int):
         self.board[row_num][column] = player_num
@@ -56,34 +60,38 @@ class Game:
         # Check horizontal locations for win
         for column in range(self.size[1]):
             if self.board[0][column] == self.board[1][column] == self.board[2][column] and self.board[0][column] != 0:
-                # draw win line
-                pygame.draw.line(self.screen, LINE_COLOR, (column * WIDTH / 3 + WIDTH / 6, OFFSET),
-                                 (column * WIDTH / 3 + WIDTH / 6, HEIGHT - OFFSET), 5)
+                # draw win line if not simulated
+                if not self.simulated_board:
+                    pygame.draw.line(self.screen, LINE_COLOR, (column * WIDTH / 3 + WIDTH / 6, OFFSET),
+                                     (column * WIDTH / 3 + WIDTH / 6, HEIGHT - OFFSET), 5)
                 self.winner = self.board[0][column]
                 return self.board[0][column]
 
         # Check vertical locations for win
         for row in range(self.size[0]):
             if self.board[row][0] == self.board[row][1] == self.board[row][2] and self.board[row][0] != 0:
-                # draw win line
-                pygame.draw.line(self.screen, LINE_COLOR, (OFFSET, row * HEIGHT / 3 + HEIGHT / 6),
-                                 (WIDTH - OFFSET, row * HEIGHT / 3 + HEIGHT / 6), 5)
-                self.winner = int(self.board[row][0])
+                # draw win line if not simulated
+                if not self.simulated_board:
+                    pygame.draw.line(self.screen, LINE_COLOR, (OFFSET, row * HEIGHT / 3 + HEIGHT / 6),
+                                     (WIDTH - OFFSET, row * HEIGHT / 3 + HEIGHT / 6), 5)
+                    self.winner = int(self.board[row][0])
                 return self.board[row][0]
 
         # Check diagonal locations for win
         if self.board[2][0] == self.board[1][1] == self.board[0][2] and self.board[2][0] != 0:
-            # draw win line
-            pygame.draw.line(self.screen, LINE_COLOR, (OFFSET, HEIGHT - OFFSET), (WIDTH - OFFSET, OFFSET), 5)
-            self.winner = int(self.board[2][0])
+            # draw win line if not simulated
+            if not self.simulated_board:
+                pygame.draw.line(self.screen, LINE_COLOR, (OFFSET, HEIGHT - OFFSET), (WIDTH - OFFSET, OFFSET), 5)
+                self.winner = int(self.board[2][0])
             return self.board[1][1]
         if self.board[0][0] == self.board[1][1] == self.board[2][2] and self.board[0][0] != 0:
             # draw win line
-            pygame.draw.line(self.screen, LINE_COLOR, (OFFSET, OFFSET), (WIDTH - OFFSET, HEIGHT - OFFSET), 5)
-            self.winner = int(self.board[0][0])
+            if not self.simulated_board:
+                pygame.draw.line(self.screen, LINE_COLOR, (OFFSET, OFFSET), (WIDTH - OFFSET, HEIGHT - OFFSET), 5)
+                self.winner = int(self.board[0][0])
             return self.board[1][1]
 
-        return False
+        return 0
 
     def reset_game(self):
         self.board = np.zeros((3, 3))
@@ -130,10 +138,6 @@ class Player:
             pygame.draw.line(screen, LINE_COLOR, (pos[0] + 60, pos[1] - 60), (pos[0] - 60, pos[1] + 60), 15)
         return True
 
-    def minimax(self):
-        """This code implements the minimax algorithm that drives the computer player."""
-        pass
-
     def make_move(self, game: Game, screen: pygame.Surface):
         x, y = pygame.mouse.get_pos()
         column = int(x // (WIDTH / 3))
@@ -149,13 +153,48 @@ class ComputerPlayer(Player):
     def __init__(self, player_num: int):
         super().__init__(player_num)
 
+    def minimax(self, board: ndarray, game: Game):
+        game.simulated_board = True
+        state = game.check_win()
+        if state == self.player_num:
+            return 1
+        elif state == 2:
+            return -1
+        if game.is_board_full():
+            return 0
+
+        scores = []
+        for row in range(board.shape[0]):
+            for column in range(board.shape[1]):
+                if game.available_square(row, column):
+                    game.mark_square(row, column, self.player_num)
+                    score = self.minimax(board, game)
+                    scores.append(score)
+                    game.board[row][column] = 0
+                    return max(scores)
+
+    def find_optimal_move(self, board: ndarray, game: Game):
+        """This code implements the minimax algorithm that drives the computer player.this should return an index
+        for the best possible move"""
+        game.simulated_board = True
+        best_score = -math.inf
+        best_move = None
+        for row in range(board.shape[0]):
+            for column in range(board.shape[1]):
+                if game.available_square(row, column):
+                    game.mark_square(row, column, self.player_num)
+                    score = self.minimax(board, game)
+                    game.board[row][column] = 0
+                    if score > best_score:
+                        best_score = score
+                        best_move = (row, column)
+        game.simulated_board = False
+        return best_move
+
     def make_move(self, game: Game, screen: pygame.Surface):
-        """for now this just uses random selection"""
-        row = random.randint(0, 2)
-        column = random.randint(0, 2)
-        while not game.available_square(row, column):
-            row = random.randint(0, 2)
-            column = random.randint(0, 2)
+        """This will use the minimax algorithm to determine the best move for the computer player."""
+
+        row, column = self.find_optimal_move(game.board, game)
         game.mark_square(row, column, self.player_num)
         x_coord = (column * WIDTH / 3) + WIDTH / 6
         y_coord = (row * HEIGHT / 3) + HEIGHT / 6
