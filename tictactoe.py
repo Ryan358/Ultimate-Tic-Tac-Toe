@@ -1,4 +1,4 @@
-"""A simple tic-tac-toe game in pygame, made for two players."""
+"""A simple tic-tac-toe game in pygame. Contains both single player and multiplayer modes."""
 
 import pygame
 import numpy as np
@@ -8,27 +8,18 @@ import game_setup as setup
 screen = setup.start_game()
 
 game = setup.Game(screen)
-board = np.zeros(game.size)
+player1 = setup.Player(1)
+player2 = setup.Player(2)
+com_player = setup.ComputerPlayer(2)
 
-player = 1
 sysfont = pygame.font.get_default_font()
 font = pygame.font.SysFont(sysfont, setup.OFFSET)
-
-
-def draw_figures(pos: tuple, player_num: int):
-    if player_num == 1:
-        pygame.draw.circle(screen, setup.LINE_COLOR, pos, 60, 15)
-    else:
-        pygame.draw.line(screen, setup.LINE_COLOR, (pos[0] - 60, pos[1] - 60), (pos[0] + 60, pos[1] + 60), 15)
-        pygame.draw.line(screen, setup.LINE_COLOR, (pos[0] + 60, pos[1] - 60), (pos[0] - 60, pos[1] + 60), 15)
-
 
 while True:
     for event in pygame.event.get():
         game.new_game_menu(event, font)
-
         if game.check_win():
-            text = font.render(f"Player {player} wins!", True, setup.LINE_COLOR)
+            text = font.render(f"Player {game.winner} wins!", True, setup.LINE_COLOR)
             screen.blit(text, (setup.WIDTH / 2 - text.get_width() / 2, text.get_height() / 2))
             game.game_over = True
         if game.is_board_full():
@@ -37,40 +28,22 @@ while True:
             sys.exit()
         if game.single_player:
             if event.type == pygame.MOUSEBUTTONDOWN and not game.game_over and not game.new_game:
-                x, y = pygame.mouse.get_pos()
-
-                if x < setup.WIDTH / 3:
-                    col = 0
-                elif x < setup.WIDTH / 3 * 2:
-                    col = 1
-                elif x < setup.WIDTH:
-                    col = 2
+                if game.player_turn == 1:
+                    player1.make_move(game, screen)
+                    game.change_turn()
                 else:
-                    col = None
+                    player2.make_move(game, screen)
+                    game.change_turn()
 
-                if y < setup.HEIGHT / 3:
-                    row = 0
-                elif y < setup.HEIGHT / 3 * 2:
-                    row = 1
-                elif y < setup.HEIGHT:
-                    row = 2
-                else:
-                    row = None
-
-                if row is not None and col is not None and game.available_square(row, col):
-                    game.mark_square(row, col, player)
-                    # center the x's and o's in each box
-                    figure_x = (col * setup.WIDTH / 3) + setup.WIDTH / 6
-                    figure_y = (row * setup.HEIGHT / 3) + setup.HEIGHT / 6
-
-                    draw_figures((figure_x, figure_y), player)
-                    if player == 1:
-                        player = 2
-                    else:
-                        player = 1
         if game.multi_player:
-            # TODO add multiplayer code using computer as player 2
-            pass
+            # use computer player to make move as player 2
+            if event.type == pygame.MOUSEBUTTONDOWN and not game.game_over and not game.new_game:
+                if game.player_turn == 1:
+                    player1.make_move(game, screen)
+                    game.change_turn()
+                else:
+                    com_player.make_move(game, screen)
+                    game.change_turn()
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
