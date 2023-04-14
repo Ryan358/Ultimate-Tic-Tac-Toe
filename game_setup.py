@@ -155,62 +155,61 @@ class Player:
             self.draw_shapes((x_coord, y_coord), screen)
 
 
+
+
+
 class ComputerPlayer(Player):
     def __init__(self, player_num: int):
         super().__init__(player_num)
 
-    def minimax(self, board: ndarray, game: Game, current_player: int, maximizing_player: int):
+    def minimax(self, board: ndarray, game: Game, current_player: int, maximizing_player: bool):
         state = game.check_win()
-        moves = game.get_valid_moves()
         if state:
             if game.winner == current_player:
                 return 1
+            elif game.winner == 0:
+                return 0
             else:
                 return -1
-        elif len(moves) == 0:
-            return 0
 
-        if current_player == maximizing_player:
+        if maximizing_player:
             best_score = -math.inf
+            for row, column in game.get_valid_moves():
+                board[row][column] = current_player
+                score = self.minimax(board, game, 1 if current_player == 2 else 2, False)
+                board[row][column] = 0
+                best_score = max(score, best_score)
+            return best_score
         else:
             best_score = math.inf
-        for move in moves:
-            row, column = move
-            board[row][column] = current_player
-            if current_player == 1:
-                current_player = 2
-            else:
-                current_player = 1
-            score = self.minimax(board, game, current_player, maximizing_player)
-            board[row][column] = 0
-            if current_player == maximizing_player and score > best_score:
-                best_score = score
-            elif maximizing_player != current_player and score < best_score:
-                best_score = score
-        return best_score
+            for row, column in game.get_valid_moves():
+                board[row][column] = current_player
+                score = self.minimax(board, game, 1 if current_player == 2 else 2, True)
+                board[row][column] = 0
+                best_score = min(score, best_score)
+            return best_score
 
-    def find_optimal_move(self, board: ndarray, game: Game, current_player: int, maximizing_player: int):
+    def find_optimal_move(self, board: ndarray, game: Game):
         """This code implements the minimax algorithm that drives the computer player. This should return an index
         for the best possible move"""
-
-        best_score = -np.inf
-        best_move = None
         game.simulated_board = True
-        for move in game.get_valid_moves():
-            game.simulated_board = True
-            game.mark_square(move[0], move[1], maximizing_player)
-            score = self.minimax(board, game, current_player, maximizing_player)
+        best_score = -math.inf
+        best_move = None
+        for row, column in game.get_valid_moves():
+            board[row][column] = game.player_turn
+            score = self.minimax(board, game, game.player_turn, False)
+            board[row][column] = 0
             if score > best_score:
                 best_score = score
-                best_move = move
-            game.board[move[0]][move[1]] = 0
+                best_move = (row, column)
         game.simulated_board = False
+        game.winner = None
         return best_move
 
     def make_move(self, game: Game, screen: pygame.Surface):
         """This will use the minimax algorithm to determine the best move for the computer player."""
         if not game.is_board_full():
-            row, column = self.find_optimal_move(game.board, game, self.player_num, self.player_num)
+            row, column = self.find_optimal_move(game.board, game)
             game.mark_square(row, column, self.player_num)
             x_coord = (column * WIDTH / 3) + WIDTH / 6
             y_coord = (row * HEIGHT / 3) + HEIGHT / 6

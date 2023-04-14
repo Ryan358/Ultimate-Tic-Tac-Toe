@@ -46,12 +46,6 @@ while True:
                 available_spaces = len(game.get_valid_moves())
                 if available_spaces < moves and not game.check_win():
                     com_player.make_move(game, screen)
-                # if game.player_turn == 1:
-                #     player1.make_move(game, screen)
-                #     game.change_turn()
-                # if game.player_turn != 1:
-                #     com_player.make_move(game, screen)
-                #     game.change_turn()
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
