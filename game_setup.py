@@ -1,14 +1,12 @@
 """This code creates the player and computer player classes, as well as the game settings and functions.
 This code is import only. The logic is handled in the main file."""
-
 import numpy as np
 import pygame
-import random
 from numpy import ndarray
 import math
-import time
+import random
 
-WIDTH, HEIGHT = 800, 800
+WIDTH, HEIGHT = 900, 900
 BG_COLOR = (220, 220, 220)
 LINE_COLOR = (0, 0, 0)
 BOARD_SIZE = (3, 3)
@@ -46,6 +44,8 @@ class Game:
         self.screen = screen
         self.player_turn = 1
         self.simulated_board = False
+        self.choose_turn = True
+        self.aigame = False
 
     def mark_square(self, row_num: int, column: int, player_num: int):
         self.board[row_num][column] = player_num
@@ -58,6 +58,12 @@ class Game:
 
     def is_board_full(self):
         return not np.any(self.board == 0)
+
+    def change_turn(self):
+        if self.player_turn == 1:
+            self.player_turn = 2
+        else:
+            self.player_turn = 1
 
     def check_win(self):
         # Check horizontal locations for win
@@ -96,23 +102,46 @@ class Game:
 
         return False
 
+    def evaluate(self, max_player_num: int, min_player_num: int):
+        # Check horizontal locations for win
+        for column in range(self.size[1]):
+            if self.board[0][column] == self.board[1][column] == self.board[2][column] and self.board[0][
+                    column] == max_player_num:
+                return 10
+            elif self.board[0][column] == self.board[1][column] == self.board[2][column] and self.board[0][
+                    column] == min_player_num:
+                return -10
+
+        # Check vertical locations for win
+        for row in range(self.size[0]):
+            if self.board[row][0] == self.board[row][1] == self.board[row][2] and self.board[row][0] == max_player_num:
+                return 10
+            elif self.board[row][0] == self.board[row][1] == self.board[row][2] and self.board[row][
+                    0] == min_player_num:
+                return -10
+
+        # Check diagonal locations for win
+        if self.board[2][0] == self.board[1][1] == self.board[0][2] and self.board[2][0] == max_player_num:
+            return 10
+        elif self.board[2][0] == self.board[1][1] == self.board[0][2] and self.board[2][0] == min_player_num:
+            return -10
+        if self.board[0][0] == self.board[1][1] == self.board[2][2] and self.board[0][0] == max_player_num:
+            return 10
+        elif self.board[0][0] == self.board[1][1] == self.board[2][2] and self.board[0][0] == min_player_num:
+            return -10
+
+        return 0
+
     def reset_game(self):
         self.board = np.zeros((3, 3))
         self.game_over = False
         self.winner = None
         self.screen.fill(BG_COLOR)
-        self.player_turn = 1
         draw_lines(self.screen)
         pygame.display.update()
 
     def get_valid_moves(self):
         return np.argwhere(self.board == 0)
-
-    def change_turn(self):
-        if self.player_turn == 1:
-            self.player_turn = 2
-        else:
-            self.player_turn = 1
 
     def new_game_menu(self, event: pygame.event.Event, font: pygame.font.Font):
         if self.new_game:
@@ -123,13 +152,39 @@ class Game:
                 if event.key == pygame.K_1:
                     self.single_player = True
                     self.multi_player = False
+                    self.aigame = False
                     self.new_game = False
                     self.reset_game()
                 elif event.key == pygame.K_2:
                     self.multi_player = True
                     self.single_player = False
+                    self.aigame = False
                     self.new_game = False
                     self.reset_game()
+                elif event.key == pygame.K_3:
+                    self.aigame = True
+                    self.single_player = False
+                    self.multi_player = False
+                    self.new_game = False
+                    self.reset_game()
+
+    def choose_turn_menu(self, event, font: pygame.font.Font):
+        """This lets the player choose whether they or the computer go first."""
+        if self.choose_turn:
+            self.screen.fill(BG_COLOR)
+            text = font.render("Press 1 to go first, press 2 to let the computer go first.", True, LINE_COLOR)
+            self.screen.blit(text, (WIDTH / 2 - text.get_width() / 2, HEIGHT / 2 - text.get_height() / 2))
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    self.player_turn = 1
+                    self.reset_game()
+                    self.choose_turn = False
+                    return True
+                elif event.key == pygame.K_2:
+                    self.player_turn = 2
+                    self.reset_game()
+                    self.choose_turn = False
+                    return True
 
 
 class Player:
@@ -155,61 +210,75 @@ class Player:
             self.draw_shapes((x_coord, y_coord), screen)
 
 
-
-
-
 class ComputerPlayer(Player):
     def __init__(self, player_num: int):
         super().__init__(player_num)
+        self.opponent_num = 1 if self.player_num == 2 else 2
 
-    def minimax(self, board: ndarray, game: Game, current_player: int, maximizing_player: bool):
-        state = game.check_win()
-        if state:
-            if game.winner == current_player:
-                return 1
-            elif game.winner == 0:
-                return 0
-            else:
-                return -1
+    def minimax(self, depth, game: Game, is_maximizing: bool):
+        if self.player_num == 1:
+            score = game.evaluate(1, 2)
+        elif self.player_num == 2:
+            score = game.evaluate(2, 1)
+        else:
+            score = 0
 
-        if maximizing_player:
+        if score == 10:
+            return score
+        if score == -10:
+            return score
+
+        if game.is_board_full():
+            return 0
+
+        if is_maximizing:
             best_score = -math.inf
             for row, column in game.get_valid_moves():
-                board[row][column] = current_player
-                score = self.minimax(board, game, 1 if current_player == 2 else 2, False)
-                board[row][column] = 0
-                best_score = max(score, best_score)
+                game.mark_square(row, column, self.player_num)
+                best_score = max(self.minimax(depth + 1, game, not is_maximizing), best_score)
+                game.mark_square(row, column, 0)
+                print(depth)
             return best_score
         else:
             best_score = math.inf
             for row, column in game.get_valid_moves():
-                board[row][column] = current_player
-                score = self.minimax(board, game, 1 if current_player == 2 else 2, True)
-                board[row][column] = 0
-                best_score = min(score, best_score)
+                game.mark_square(row, column, self.opponent_num)
+                best_score = min(self.minimax(depth + 1, game, not is_maximizing), best_score)
+                game.mark_square(row, column, 0)
+                print(depth)
             return best_score
 
-    def find_optimal_move(self, board: ndarray, game: Game):
-        """This code implements the minimax algorithm that drives the computer player. This should return an index
-        for the best possible move"""
+    def find_optimal_move(self, game: Game):
+        """This code implements the minimax algorithm that drives the computer player. This should return
+         the best possible move"""
         game.simulated_board = True
         best_score = -math.inf
         best_move = None
         for row, column in game.get_valid_moves():
-            board[row][column] = game.player_turn
-            score = self.minimax(board, game, game.player_turn, False)
-            board[row][column] = 0
+            game.mark_square(row, column, self.player_num)
+            score = self.minimax(0, game, False)
+            game.mark_square(row, column, 0)
             if score > best_score:
                 best_score = score
                 best_move = (row, column)
+        print('The value of the best move is: ', best_score)
         game.simulated_board = False
-        game.winner = None
         return best_move
 
     def make_move(self, game: Game, screen: pygame.Surface):
         """This will use the minimax algorithm to determine the best move for the computer player."""
         if not game.is_board_full():
-            row, column = self.find_optimal_move(game.board, game)
+            # give a percentage chance of the computer making a random move
+            if random.randint(1, 100) <= 10:
+                row = random.randint(0, 2)
+                column = random.randint(0, 2)
+                while not game.available_square(row, column):
+                    row = random.randint(0, 2)
+                    column = random.randint(0, 2)
+                game.mark_square(row, column, self.player_num)
+            else:
+                row, column = self.find_optimal_move(game)
+
             game.mark_square(row, column, self.player_num)
             x_coord = (column * WIDTH / 3) + WIDTH / 6
             y_coord = (row * HEIGHT / 3) + HEIGHT / 6
