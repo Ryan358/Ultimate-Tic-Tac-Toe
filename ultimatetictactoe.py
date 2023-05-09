@@ -1,7 +1,11 @@
-"""A simple tic-tac-toe game in pygame. Contains both single player and multiplayer modes."""
+"""This is a game of ultimate tic tac toe, rather than the simple tic tac toe game in tictactoe.py. This contains a grid
+of 9 local tic tac toe boards, and the player must win 3 local boards in a row to win the global board. The game is
+played in the same way, except that the player is sent to the local board to make their move based on where the opponent
+moved in their local board"""
+
 import pygame
 import sys
-import game_setup as setup
+import ultimate_game_setup as setup
 
 screen = setup.start_game()
 
@@ -9,11 +13,12 @@ screen = setup.start_game()
 game = setup.Game(screen)
 player1 = setup.Player(1)
 player2 = setup.Player(2)
-com_player1 = setup.ComputerPlayer(1)
-com_player2 = setup.ComputerPlayer(2)
+com_player = setup.ComputerPlayer(2)
 
 sysfont = pygame.font.get_default_font()
 font = pygame.font.SysFont(sysfont, setup.OFFSET)
+
+screen = setup.start_game()
 
 while True:
     for event in pygame.event.get():
@@ -39,22 +44,14 @@ while True:
                     player2.make_move(game, screen)
                     game.change_turn()
 
-        if game.single_player:
-            # use computer player to make move as player 2
-            moves = len(game.get_valid_moves())
-            if event.type == pygame.MOUSEBUTTONDOWN and not game.game_over and not game.new_game:
-                player1.make_move(game, screen)
-                available_spaces = len(game.get_valid_moves())
-                if available_spaces < moves and not game.check_win():
-                    com_player2.make_move(game, screen)
-
-        if game.aigame:
-            moves = len(game.get_valid_moves())
-            if not game.game_over and not game.new_game:
-                com_player1.make_move(game, screen)
-                available_spaces = len(game.get_valid_moves())
-                if available_spaces < moves and not game.check_win():
-                    com_player2.make_move(game, screen)
+        # if game.single_player:
+        #     # use computer player to make move as player 2
+        #     moves = len(game.get_valid_moves())
+        #     if event.type == pygame.MOUSEBUTTONDOWN and not game.game_over and not game.new_game:
+        #         player1.make_move(game, screen)
+        #         available_spaces = len(game.get_valid_moves())
+        #         if available_spaces < moves and not game.check_win():
+        #             com_player.make_move(game, screen)
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_r:
