@@ -11,7 +11,6 @@ BG_COLOR = (220, 220, 220)
 LINE_COLOR = (0, 0, 0)
 BOARD_SIZE = (3, 3)
 OFFSET = 40
-delay = 0.5
 
 
 def draw_lines(screen: pygame.Surface):
@@ -33,7 +32,7 @@ def start_game():
 class Game:
     board: ndarray
 
-    def __init__(self, screen: pygame.Surface):
+    def __init__(self, screen: pygame.Surface = 1, graphics_enabled: bool = True):
         self.board = np.zeros((3, 3))
         self.size = BOARD_SIZE
         self.game_over = False
@@ -43,9 +42,9 @@ class Game:
         self.multi_player = False
         self.screen = screen
         self.player_turn = 1
-        self.simulated_board = False
         self.choose_turn = True
         self.aigame = False
+        self.graphics_enabled = graphics_enabled
 
     def mark_square(self, row_num: int, column: int, player_num: int):
         self.board[row_num][column] = player_num
@@ -70,7 +69,7 @@ class Game:
         for column in range(self.size[1]):
             if self.board[0][column] == self.board[1][column] == self.board[2][column] and self.board[0][column] != 0:
                 # draw win line if not simulated
-                if not self.simulated_board:
+                if self.graphics_enabled:
                     pygame.draw.line(self.screen, LINE_COLOR, (column * WIDTH / 3 + WIDTH / 6, OFFSET),
                                      (column * WIDTH / 3 + WIDTH / 6, HEIGHT - OFFSET), 5)
                 self.winner = self.board[0][column]
@@ -80,7 +79,7 @@ class Game:
         for row in range(self.size[0]):
             if self.board[row][0] == self.board[row][1] == self.board[row][2] and self.board[row][0] != 0:
                 # draw win line if not simulated
-                if not self.simulated_board:
+                if self.graphics_enabled:
                     pygame.draw.line(self.screen, LINE_COLOR, (OFFSET, row * HEIGHT / 3 + HEIGHT / 6),
                                      (WIDTH - OFFSET, row * HEIGHT / 3 + HEIGHT / 6), 5)
                     self.winner = int(self.board[row][0])
@@ -89,13 +88,13 @@ class Game:
         # Check diagonal locations for win
         if self.board[2][0] == self.board[1][1] == self.board[0][2] and self.board[2][0] != 0:
             # draw win line if not simulated
-            if not self.simulated_board:
+            if self.graphics_enabled:
                 pygame.draw.line(self.screen, LINE_COLOR, (OFFSET, HEIGHT - OFFSET), (WIDTH - OFFSET, OFFSET), 5)
                 self.winner = int(self.board[2][0])
             return True
         if self.board[0][0] == self.board[1][1] == self.board[2][2] and self.board[0][0] != 0:
             # draw win line
-            if not self.simulated_board:
+            if self.graphics_enabled:
                 pygame.draw.line(self.screen, LINE_COLOR, (OFFSET, OFFSET), (WIDTH - OFFSET, HEIGHT - OFFSET), 5)
                 self.winner = int(self.board[0][0])
             return True
@@ -136,37 +135,39 @@ class Game:
         self.board = np.zeros((3, 3))
         self.game_over = False
         self.winner = None
-        self.screen.fill(BG_COLOR)
-        draw_lines(self.screen)
-        pygame.display.update()
+        if self.graphics_enabled:
+            self.screen.fill(BG_COLOR)
+            draw_lines(self.screen)
+            pygame.display.update()
 
     def get_valid_moves(self):
         return np.argwhere(self.board == 0)
 
     def new_game_menu(self, event: pygame.event.Event, font: pygame.font.Font):
         if self.new_game:
-            self.screen.fill(BG_COLOR)
-            text = font.render("Press 1 for single player, press 2 for multiplayer.", True, LINE_COLOR)
-            self.screen.blit(text, (WIDTH / 2 - text.get_width() / 2, HEIGHT / 2 - text.get_height() / 2))
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
-                    self.single_player = True
-                    self.multi_player = False
-                    self.aigame = False
-                    self.new_game = False
-                    self.reset_game()
-                elif event.key == pygame.K_2:
-                    self.multi_player = True
-                    self.single_player = False
-                    self.aigame = False
-                    self.new_game = False
-                    self.reset_game()
-                elif event.key == pygame.K_3:
-                    self.aigame = True
-                    self.single_player = False
-                    self.multi_player = False
-                    self.new_game = False
-                    self.reset_game()
+            if self.graphics_enabled:
+                self.screen.fill(BG_COLOR)
+                text = font.render("Press 1 for single player, press 2 for multiplayer.", True, LINE_COLOR)
+                self.screen.blit(text, (WIDTH / 2 - text.get_width() / 2, HEIGHT / 2 - text.get_height() / 2))
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_1:
+                        self.single_player = True
+                        self.multi_player = False
+                        self.aigame = False
+                        self.new_game = False
+                        self.reset_game()
+                    elif event.key == pygame.K_2:
+                        self.multi_player = True
+                        self.single_player = False
+                        self.aigame = False
+                        self.new_game = False
+                        self.reset_game()
+                    elif event.key == pygame.K_3:
+                        self.aigame = True
+                        self.single_player = False
+                        self.multi_player = False
+                        self.new_game = False
+                        self.reset_game()
 
     def choose_turn_menu(self, event, font: pygame.font.Font):
         """This lets the player choose whether they or the computer go first."""
@@ -207,13 +208,17 @@ class Player:
             game.mark_square(row, column, self.player_num)
             x_coord = (column * WIDTH / 3) + WIDTH / 6
             y_coord = (row * HEIGHT / 3) + HEIGHT / 6
-            self.draw_shapes((x_coord, y_coord), screen)
+            if game.graphics_enabled:
+                self.draw_shapes((x_coord, y_coord), screen)
 
 
 class ComputerPlayer(Player):
-    def __init__(self, player_num: int):
+    def __init__(self, player_num: int, difficulty: int = 100):
         super().__init__(player_num)
         self.opponent_num = 1 if self.player_num == 2 else 2
+        self.random = False
+        self.maximizer = False
+        self.difficulty = difficulty
 
     def minimax(self, depth, game: Game, is_maximizing: bool):
         if self.player_num == 1:
@@ -237,7 +242,6 @@ class ComputerPlayer(Player):
                 game.mark_square(row, column, self.player_num)
                 best_score = max(self.minimax(depth + 1, game, not is_maximizing), best_score)
                 game.mark_square(row, column, 0)
-                print(depth)
             return best_score
         else:
             best_score = math.inf
@@ -245,13 +249,11 @@ class ComputerPlayer(Player):
                 game.mark_square(row, column, self.opponent_num)
                 best_score = min(self.minimax(depth + 1, game, not is_maximizing), best_score)
                 game.mark_square(row, column, 0)
-                print(depth)
             return best_score
 
     def find_optimal_move(self, game: Game):
         """This code implements the minimax algorithm that drives the computer player. This should return
          the best possible move"""
-        game.simulated_board = True
         best_score = -math.inf
         best_move = None
         for row, column in game.get_valid_moves():
@@ -261,25 +263,25 @@ class ComputerPlayer(Player):
             if score > best_score:
                 best_score = score
                 best_move = (row, column)
-        print('The value of the best move is: ', best_score)
-        game.simulated_board = False
         return best_move
 
     def make_move(self, game: Game, screen: pygame.Surface):
         """This will use the minimax algorithm to determine the best move for the computer player."""
         if not game.is_board_full():
             # give a percentage chance of the computer making a random move
-            if random.randint(1, 100) <= 10:
+            if random.randint(1, 100) >= self.difficulty:
                 row = random.randint(0, 2)
                 column = random.randint(0, 2)
                 while not game.available_square(row, column):
                     row = random.randint(0, 2)
                     column = random.randint(0, 2)
                 game.mark_square(row, column, self.player_num)
+                print("Random")
             else:
                 row, column = self.find_optimal_move(game)
 
             game.mark_square(row, column, self.player_num)
             x_coord = (column * WIDTH / 3) + WIDTH / 6
             y_coord = (row * HEIGHT / 3) + HEIGHT / 6
-            self.draw_shapes((x_coord, y_coord), screen)
+            if game.graphics_enabled:
+                self.draw_shapes((x_coord, y_coord), screen)
