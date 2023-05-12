@@ -213,12 +213,12 @@ class Player:
 
 
 class ComputerPlayer(Player):
-    def __init__(self, player_num: int, difficulty: int = 100):
+    def __init__(self, player_num: int, randomplayer, difficulty: int = 100):
         super().__init__(player_num)
         self.opponent_num = 1 if self.player_num == 2 else 2
-        self.random = False
+        self.random = randomplayer
         self.maximizer = False
-        self.difficulty = difficulty
+        self.difficulty = 0 if self.random else difficulty
 
     def minimax(self, depth, game: Game, is_maximizing: bool):
         if self.player_num == 1:
@@ -276,7 +276,7 @@ class ComputerPlayer(Player):
                     row = random.randint(0, 2)
                     column = random.randint(0, 2)
                 game.mark_square(row, column, self.player_num)
-                print("Random")
+                # print("Random")
             else:
                 row, column = self.find_optimal_move(game)
 
@@ -285,3 +285,5 @@ class ComputerPlayer(Player):
             y_coord = (row * HEIGHT / 3) + HEIGHT / 6
             if game.graphics_enabled:
                 self.draw_shapes((x_coord, y_coord), screen)
+            move = np.array([row, column])
+            return move

@@ -12,8 +12,8 @@ player2 = setup.Player(2)
 
 # create the potential computer players. If single player is selected, the computer player will be player 2. There
 # is an optional difficulty setting that ranges from 0-100 (default is 100).
-com_player1 = setup.ComputerPlayer(1)
-com_player2 = setup.ComputerPlayer(2)
+com_player1 = setup.ComputerPlayer(1, False)
+com_player2 = setup.ComputerPlayer(2, False)
 
 sysfont = pygame.font.get_default_font()
 font = pygame.font.SysFont(sysfont, setup.OFFSET)
