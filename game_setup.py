@@ -59,10 +59,7 @@ class Game:
         return not np.any(self.board == 0)
 
     def change_turn(self):
-        if self.player_turn == 1:
-            self.player_turn = 2
-        else:
-            self.player_turn = 1
+        self.player_turn = 3 - self.player_turn
 
     def check_win(self):
         # Check horizontal locations for win

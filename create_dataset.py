@@ -17,6 +17,7 @@ game = setup.Game(graphics_enabled=False)
 def play_regular_game(agent1, agent2, game):
     game_states = []
     game_actions = []
+    rewards = []
 
     game_states.append(np.copy(game.board))
     action = agent1.make_move(game, None)
@@ -46,12 +47,10 @@ def play_regular_game(agent1, agent2, game):
         reward1 = 0
         reward2 = 0
 
-    for i, (state, action) in enumerate(zip(game_states, game_actions)):
-        if i % 2 == 0:
-            reward = reward1
-        else:
-            reward = reward2
-        dataset.append((state, action, reward))
+    # append rewards to their own list
+    # Store the transition in the training dataset
+    for i in range(len(game_states)-1):
+        dataset.append((game_states[i], game_actions[i], reward1, game_states[i + 1]))
 
 
 def create_data(num_games):
@@ -62,7 +61,7 @@ def create_data(num_games):
         pickle.dump(dataset, f)
 
 
-create_data(1000)
+create_data(1)
 
 data = pickle.load(open('tic_tac_toe_dataset.pkl', 'rb'))
 print(data)
