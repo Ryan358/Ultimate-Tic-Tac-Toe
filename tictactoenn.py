@@ -9,13 +9,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-if torch.cuda.is_available():
-    device = torch.device('cuda')
-elif torch.backends.mps.is_available():
-    device = torch.device('mps')
-else:
-    device = torch.device('cpu')
-print(f"Using device: {device}")
+
 
 
 class DQN(nn.Module):
@@ -40,116 +34,128 @@ class DQN(nn.Module):
         x = self.fc2(x)
         return x
 
+    def predict(self, state):
+        with torch.no_grad():
+            action = self.forward(state)
 
-# Hyperparameters
-EPSILON_INITIAL = 0.9
-EPSILON_FINAL = 0.1
-EPSILON_DECAY = 0.999
-REPLAY_MEMORY_CAPACITY = 10000
-BATCH_SIZE = 32
-LEARNING_RATE = 0.001
-DISCOUNT_FACTOR = 0.99
-TRAINING_ITERATIONS = 1000
+            # convert to numpy array
+            action = action.numpy()
+            # convert to row, column integers
+            action = divmod(action, 3)
+            return action
 
-# Initialize the DQN
-dqn = DQN()
-dqn.to(device)
-optimizer = optim.Adam(dqn.parameters(), lr=LEARNING_RATE)
-mse_loss = nn.MSELoss()
+def main():
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    elif torch.backends.mps.is_available():
+        device = torch.device('mps')
+    else:
+        device = torch.device('cpu')
+    print(f"Using device: {device}")
+    # Hyperparameters
+    EPSILON_INITIAL = 0.9
+    EPSILON_FINAL = 0.1
+    EPSILON_DECAY = 0.999
+    REPLAY_MEMORY_CAPACITY = 10000
+    BATCH_SIZE = 32
+    LEARNING_RATE = 0.001
+    DISCOUNT_FACTOR = 0.99
+    TRAINING_ITERATIONS = 1000
 
-# Replay memory buffer
-replay_memory = []
+    # Initialize the DQN
+    dqn = DQN()
+    dqn.to(device)
+    optimizer = optim.Adam(dqn.parameters(), lr=LEARNING_RATE)
+    mse_loss = nn.MSELoss()
 
-# Exploration-exploitation strategy
-epsilon = EPSILON_INITIAL
+    # Replay memory buffer
+    replay_memory = []
 
-# Initialize the game
-player1 = setup.ComputerPlayer(1, True)
-player2 = setup.ComputerPlayer(2, True)
-game = setup.Game(graphics_enabled=False)
+    # Exploration-exploitation strategy
+    epsilon = EPSILON_INITIAL
 
-for iteration in range(TRAINING_ITERATIONS):
-    game.reset_game()
-    game_over = False
-    state = np.copy(game.board)
-    while not game_over:
-        if game.player_turn == 1:
-            if random.random() < epsilon:
-                if not game.is_board_full():
-                    action = player1.make_move(game, None)
-                    next_state = np.copy(game.board)
+    # Initialize the game
+    player1 = setup.ComputerPlayer(1, True)
+    player2 = setup.ComputerPlayer(2, True)
+    game = setup.Game(graphics_enabled=False)
 
-            else:
-                # Use the DQN to predict the best move.
-                if not game.is_board_full():
-                    q_values = dqn(torch.tensor(state, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(device))
-                    action = torch.argmax(q_values).item()
-                    action = divmod(action, 3)
-                    game.mark_square(action[0], action[1], 1)
-                    next_state = np.copy(game.board)
-        else:
-            if random.random() < epsilon:
-                if not game.is_board_full():
-                    action = player2.make_move(game, None)
-                    next_state = np.copy(game.board)
+    for iteration in range(TRAINING_ITERATIONS):
+        game.reset_game()
+        game_over = False
+        state = np.copy(game.board)
+        while not game_over:
+            if game.player_turn == 1:
+                if random.random() < epsilon:
+                    if not game.is_board_full():
+                        action = player1.make_move(game, None)
+                        next_state = np.copy(game.board)
+
                 else:
-                    q_values = dqn(torch.tensor(state, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(device))
-                    action = torch.argmax(q_values).item()
-                    action = divmod(action, 3)
-                    game.mark_square(action[0], action[1], 2)
-                    next_state = np.copy(game.board)
-        game.change_turn()
+                    # Use the DQN to predict the best move.
+                    if not game.is_board_full():
+                        q_values = dqn(torch.tensor(state, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(device))
+                        action = torch.argmax(q_values).item()
+                        action = divmod(action, 3)
+                        game.mark_square(action[0], action[1], 1)
+                        next_state = np.copy(game.board)
+            else:
+                if random.random() < epsilon:
+                    if not game.is_board_full():
+                        action = player2.make_move(game, None)
+                        next_state = np.copy(game.board)
+                    else:
+                        q_values = dqn(torch.tensor(state, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(device))
+                        action = torch.argmax(q_values).item()
+                        action = divmod(action, 3)
+                        game.mark_square(action[0], action[1], 2)
+                        next_state = np.copy(game.board)
+            game.change_turn()
 
-        reward = 0.0
-
-        if game.check_win() and game.winner == 1:
-            reward = 1.0
-            game_over = True
-        elif game.check_win() and game.winner == 2:
-            reward = -1.0
-            game_over = True
-        elif game.is_board_full() and not game.check_win():
-            reward = 0.5
-            game_over = True
-        else:
             reward = 0.0
-        if game.is_board_full():
-            game_over = True
-        # Add the state and action to the replay memory
-        replay_memory.append((state, action, reward, next_state, game_over))
-        state = next_state.copy()
 
-        epsilon = max(EPSILON_FINAL, epsilon * EPSILON_DECAY)
+            if game.check_win() and game.winner == 1:
+                reward = 1.0
+                game_over = True
+            elif game.check_win() and game.winner == 2:
+                reward = -1.0
+                game_over = True
+            elif game.is_board_full() and not game.check_win():
+                reward = 0.5
+                game_over = True
+            else:
+                reward = 0.0
+            if game.is_board_full():
+                game_over = True
+            # Add the state and action to the replay memory
+            replay_memory.append((state, action, reward, next_state, game_over))
+            state = next_state.copy()
 
-        if len(replay_memory) >= BATCH_SIZE:
-            batch = random.sample(replay_memory, BATCH_SIZE)
-            states, actions, rewards, next_states, game_overs = zip(*batch)
+            epsilon = max(EPSILON_FINAL, epsilon * EPSILON_DECAY)
+            if len(replay_memory) >= BATCH_SIZE:
+                batch = random.sample(replay_memory, BATCH_SIZE)
+                states, actions, rewards, next_states, game_overs = zip(*batch)
 
-            states = torch.tensor(states, dtype=torch.float32).unsqueeze(1).to(device)
-            actions = torch.tensor(actions, dtype=torch.long).to(device)
-            rewards = torch.tensor(rewards, dtype=torch.float32).to(device)
-            next_states = torch.tensor(next_states, dtype=torch.float32).unsqueeze(1).to(device)
-            game_overs = torch.tensor(game_overs, dtype=torch.float32).to(device)
+                states = torch.tensor(states, dtype=torch.float32).unsqueeze(1).to(device)
+                actions = torch.tensor(actions, dtype=torch.long).to(device)
+                rewards = torch.tensor(rewards, dtype=torch.float32).to(device)
+                next_states = torch.tensor(next_states, dtype=torch.float32).unsqueeze(1).to(device)
+                game_overs = torch.tensor(game_overs, dtype=torch.float32).to(device)
 
-            q_values = dqn(states).squeeze(1)
-            action_indices = actions[:, 0] * 3 + actions[:, 1]
-            q_values_selected = q_values.gather(1, action_indices.unsqueeze(1))
+                q_values = dqn(states).squeeze(1)
+                action_indices = actions[:, 0] * 3 + actions[:, 1]
+                q_values_selected = q_values.gather(0, action_indices.unsqueeze(1))
 
-            target_q_values = rewards + DISCOUNT_FACTOR * torch.max(dqn(next_states), dim=1)[0] * (1 - game_overs)
-            target_q_values = target_q_values.squeeze()
+                target_q_values = rewards + DISCOUNT_FACTOR * torch.max(dqn(next_states), dim=1)[0] * (1 - game_overs)
+                target_q_values = target_q_values.squeeze()
 
-            loss = mse_loss(q_values_selected.squeeze(1), target_q_values)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                loss = mse_loss(q_values_selected.squeeze(1), target_q_values)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                print(f"Iteration: {iteration} out of {TRAINING_ITERATIONS}, Loss: {loss.item()}")
 
-            print(f"Loss: {loss.item()}")
-
-
-
-
+    torch.save(dqn.state_dict(), 'dqn.pth')
 
 
-
-
-
+if __name__ == '__main__':
+    main()
