@@ -24,7 +24,7 @@ def play_regular_game(agent1, agent2, game):
     game.change_turn()
     game_actions.append(action)
 
-    while not game.check_win() and not game.is_board_full():
+    while not game.check_win() and not game.is_local_board_full():
         game_states.append(np.copy(game.board))
         if game.player_turn == 1:
             action = agent1.make_move(game, None)

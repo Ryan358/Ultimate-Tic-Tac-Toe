@@ -99,34 +99,37 @@ class Game:
         return False
 
     def evaluate(self, max_player_num: int, min_player_num: int):
+        win_reward = 10
+        lose_reward = -10
+        draw_reward = 0
         # Check horizontal locations for win
         for column in range(self.size[1]):
             if self.board[0][column] == self.board[1][column] == self.board[2][column] and self.board[0][
                     column] == max_player_num:
-                return 10
+                return win_reward
             elif self.board[0][column] == self.board[1][column] == self.board[2][column] and self.board[0][
                     column] == min_player_num:
-                return -10
+                return lose_reward
 
         # Check vertical locations for win
         for row in range(self.size[0]):
             if self.board[row][0] == self.board[row][1] == self.board[row][2] and self.board[row][0] == max_player_num:
-                return 10
+                return win_reward
             elif self.board[row][0] == self.board[row][1] == self.board[row][2] and self.board[row][
                     0] == min_player_num:
-                return -10
+                return lose_reward
 
         # Check diagonal locations for win
         if self.board[2][0] == self.board[1][1] == self.board[0][2] and self.board[2][0] == max_player_num:
-            return 10
+            return win_reward
         elif self.board[2][0] == self.board[1][1] == self.board[0][2] and self.board[2][0] == min_player_num:
-            return -10
+            return lose_reward
         if self.board[0][0] == self.board[1][1] == self.board[2][2] and self.board[0][0] == max_player_num:
-            return 10
+            return win_reward
         elif self.board[0][0] == self.board[1][1] == self.board[2][2] and self.board[0][0] == min_player_num:
-            return -10
+            return lose_reward
 
-        return 0
+        return draw_reward
 
     def reset_game(self):
         self.board = np.zeros((3, 3))
@@ -136,9 +139,14 @@ class Game:
             self.screen.fill(BG_COLOR)
             draw_lines(self.screen)
             pygame.display.update()
+        return self.board
 
     def get_valid_moves(self):
         return np.argwhere(self.board == 0)
+
+    def get_valid_moves_list(self):
+        # convert to list of numbers 0-8
+        return [i[0] * 3 + i[1] for i in self.get_valid_moves()]
 
     def new_game_menu(self, event: pygame.event.Event, font: pygame.font.Font):
         if self.new_game:
